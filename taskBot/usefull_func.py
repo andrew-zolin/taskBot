@@ -53,3 +53,17 @@ def errorLoger(func):
         return None
     return wrapper
 
+
+async def callAlertFucnInDev(call: types.CallbackQuery,):
+    await call.answer(
+        text = '💠 Function in developing.'
+    )
+    return None
+
+async def messageAlertFucnInDev(message: types.Message):
+    await message.answer(
+        text = '💠 Function in developing.'
+    )
+    return None
+    
+

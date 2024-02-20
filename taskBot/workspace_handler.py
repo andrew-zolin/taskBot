@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types.message import ContentType
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from pytest import mark
-from usefull_func import generateCode, try_del_message
+from usefull_func import callAlertFucnInDev, generateCode, try_del_message
 from database_handler import DataBase
 from temp_data import UserState
 from config import *
@@ -103,6 +103,7 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
     workSpaceId = call.data
     if back:
         workSpaceId = call.data.split(':')[1]
+
     print(workSpaceId)
     workSpaceInfo = db.getWorkSpaceInfoFromId(workSpaceId)
     print(workSpaceInfo)
@@ -112,9 +113,9 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
         markup.add(InlineKeyboardButton(text = 'Create task', callback_data = f'create_task:{workSpaceId}'))
         markup.add(
             InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{workSpaceId}'),
-            InlineKeyboardButton(text = 'Get meetings', callback_data = f'get_meeting:{workSpaceId}'),
+            InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{workSpaceId}'),
         )
-        markup.add(InlineKeyboardButton(text = 'Create meeting', callback_data = f'create_meeting:{workSpaceId}'))
+        # markup.add(InlineKeyboardButton(text = 'Create meeting', callback_data = f'create_meeting:{workSpaceId}'))
         markup.add(InlineKeyboardButton(text = 'Exit and delete', callback_data = f'delete_ws:{workSpaceId}'))
 
     else:
@@ -284,9 +285,10 @@ async def cencelResp(call: types.CallbackQuery):
     await workSpaceMenu(call)
     
 
-async def getTask(call: types.CallbackQuery, update = False):
+async def getTask(call: types.CallbackQuery, update = False, diraction = None, back = False):
     work_space_id = call.data.split(':')[1]
-    
+    if back:
+        work_space_id = us.getUserState(call.message.chat.id).split(':')[1]
     tasks = db.getAllTaskFromWorkSpaceId(work_space_id)
     print(tasks)
     if tasks == None or tasks == []:
@@ -299,22 +301,20 @@ async def getTask(call: types.CallbackQuery, update = False):
     is_admin = bool(db.getIsAdminWorkSpacePartisipant(call.message.chat.id, work_space_id)[0])
     current_pos = 0
     len_pos = len(tasks)
-    markup = InlineKeyboardMarkup(row_width = 3)
-    if is_admin:
-        markup.add(
-            InlineKeyboardButton(text = 'Delete', callback_data = 'delete_task'),
-            InlineKeyboardButton(text = 'Update', callback_data = 'update_task'),
-        )
-    markup.add(
-        InlineKeyboardButton(text = '<', callback_data = '<'),     
-        InlineKeyboardButton(text = f'{current_pos+1}/{len_pos}', callback_data = '...'),        
-        InlineKeyboardButton(text = '>', callback_data = '>'),      
-    )
-    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_manu:{work_space_id}'))
 
-        
+    if update:
+        current_pos = int(us.getUserState(call.message.chat.id).split(':')[0])
+
+    match diraction:
+        case diraction if diraction == '<': 
+            if current_pos > 0: current_pos -= 1
+            else: return None
+        case diraction if diraction == '>': 
+            if current_pos < len_pos-1: current_pos += 1
+            else: return None
 
     
+
     task_id = tasks[current_pos][0]
     description = tasks[current_pos][1]
     responsible_user_name_list = tasks[current_pos][2].split(':')
@@ -322,19 +322,93 @@ async def getTask(call: types.CallbackQuery, update = False):
     responsible_users = ', '.join([i[1] for i in responsible_user_name_list])[0:]
     time_create = tasks[current_pos][3]
     time_end = tasks[current_pos][4]
-    if update:
-        current_pos = int(us.getUserState(call.message.chat.id).split(':')[0]) + 1
 
-    await try_del_message(call.message, bot)
-    await bot.send_message(
-        chat_id = call.message.chat.id,
-            text = f'''💠 <b>Task id:</b> {task_id}
+    markup = InlineKeyboardMarkup(row_width = 3)
+    if is_admin:
+        markup.add(
+            InlineKeyboardButton(text = 'Delete', callback_data = f'delete_t:{work_space_id}:{task_id}'),
+            InlineKeyboardButton(text = 'Update', callback_data = f'update_t:{work_space_id}:{task_id}'),
+        )
+    markup.add(
+        InlineKeyboardButton(text = '<', callback_data = f'<:{work_space_id}'),     
+        InlineKeyboardButton(text = f'{current_pos+1}/{len_pos}', callback_data = '...'),        
+        InlineKeyboardButton(text = '>', callback_data = f'>:{work_space_id}'),      
+    )
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_manu:{work_space_id}'))
+
+    text = f'''💠 <b>Task id:</b> {task_id}
 ├  <b>Description:</b> {description}
 ├  <b>Responsible users:</b> {responsible_users}
 ├  <b>Time create:</b> {time_create}
-└  <b>Time end:</b> {time_end}''',
-            reply_markup = markup,
-        ) 
+└  <b>Time end:</b> {time_end}'''
+
     if update:
-        return None
+        await call.message.edit_text(
+                text = text,  
+                reply_markup = markup,
+            ) 
+    else:
+        await try_del_message(call.message, bot)
+        await bot.send_message(
+            chat_id = call.message.chat.id,
+                text = text,
+                reply_markup = markup,
+            ) 
     us.updateUserState(call.message.chat.id, f'{current_pos}:{work_space_id}')
+
+
+async def checkDelOrNoTask(call: types.CallbackQuery):
+    work_space_id = call.data.split(':')[1]
+    task_id = call.data.split(':')[2]
+
+    markup = InlineKeyboardMarkup(row_width = 2)
+    markup.add(
+        InlineKeyboardButton(text = 'Delete', callback_data = f'ap_del_t:{work_space_id}:{task_id}'),
+        InlineKeyboardButton(text = 'Cansel', callback_data = f'ca_del_t:{work_space_id}:{task_id}'),
+    )
+
+    await call.message.edit_text(
+        text = '💠 Delete this task ?',
+        reply_markup = markup,
+    )
+
+async def getChoiceDelOrNoTask(call: types.CallbackQuery):
+    data = call.data.split(':')[0]
+    work_space_id = call.data.split(':')[1]
+    task_id = call.data.split(':')[2]
+    us.updateUserState(call.message.chat.id, f'getTask:{work_space_id}')
+    if data == 'ap_del_t':
+        db.deleteTaskFromTaskId(task_id)
+        await call.answer(
+            text = '💠 Task has been deleted.',
+        )
+        
+    else:
+        await call.answer(
+            text = '💠 Delting has been canseled.',
+        )
+    await getTask(call, back = True)
+
+
+async def updateTask(call: types.CallbackQuery):
+    await callAlertFucnInDev(call)
+
+
+async def joinMeeting(call: types.CallbackQuery):
+    work_space_id = call.data.split(':')[1]
+    task_id = call.data.split(':')[2]
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_t_m:{work_space_id}'))
+    workSpaceInfo = db.getWorkSpaceInfoFromId(work_space_id)
+    workSpaceName = workSpaceInfo[1] 
+    leaderChatId = db.getLeaderWorkSpace(work_space_id)[0]
+    leaderName = db.getFirstNameFromChatId(leaderChatId)[0]
+    await call.message.edit_text(
+        text = f'''💠 Name: "{workSpaceName}"
+├ Leader: "{leaderName}"
+└ Google meet link: https://ссылка''',
+        reply_markup = markup,
+    )
+
+async def backTaskMenu(call: types.CallbackQuery):
+    await getTask(call, back = True)

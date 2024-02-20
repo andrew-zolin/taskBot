@@ -145,6 +145,9 @@ class DataBase(Singleton):
     def addTask(self, responsible_users, description, time_create, time_end, work_space_id):
         self.__insert('workSpaceTask', {'responsible_users': responsible_users, 'description': description, 'time_create': time_create, 'time_end': time_end, 'work_space_id': work_space_id})
 
+    def getTaskDataFromTaskId(self, task_id):
+        return self.__select(_from = 'workSpaceTask', _where = {'task_id': task_id})
+
     def getLastTaskFromWorkSpaceId(self, work_space_id):
         row = self.__select('task_id', 'workSpaceTask', {'work_space_id': work_space_id}, fetchall = True)
         if row != None:
@@ -154,16 +157,14 @@ class DataBase(Singleton):
         tasks = self.__select('*', 'workSpaceTask', {'work_space_id': work_space_id}, True)
         return tasks
 
+    def deleteTaskFromTaskId(self, task_id):
+        self.__delete('workSpaceTask', {'task_id': task_id})
+
     def deleteTasksFromWorkSpaceId(self, work_space_id):
         self.__delete('workSpaceTask', {'work_space_id': work_space_id})
-
-    # def getAllTasksDataFromWorkSpaceId(self, )
 
     def getAllTasksFromWorkSpaceId(self, work_space_id):
         return self.__select('task_id', 'workSpaceTask', {'work_space_id': work_space_id}, fetchall = True)
 
-    def getTaskDataFromTaskId(self, task_id):
-        return self.__select(_from = 'workSpaceTask', _where = {'task_id': task_id})
     
-    def dropTask(self, task_id):
-        self.__delete('workSpaceTask', {'task_id': task_id})
+    

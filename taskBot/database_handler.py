@@ -149,8 +149,13 @@ class DataBase(Singleton):
         row = self.__select('task_id', 'workSpaceTask', {'work_space_id': work_space_id}, fetchall = True)
         if row != None:
             return list(map(lambda x: x[0], row))
-        
+    
+    def getAllTaskFromWorkSpaceId(self, work_space_id):
+        tasks = self.__select('*', 'workSpaceTask', {'work_space_id': work_space_id}, True)
+        return tasks
 
+    def deleteTasksFromWorkSpaceId(self, work_space_id):
+        self.__delete('workSpaceTask', {'work_space_id': work_space_id})
 
     # def getAllTasksDataFromWorkSpaceId(self, )
 

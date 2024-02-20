@@ -4,6 +4,7 @@ import zoneinfo
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types.message import ContentType
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from pytest import mark
 from usefull_func import generateCode, try_del_message
 from database_handler import DataBase
 from temp_data import UserState
@@ -97,9 +98,11 @@ async def createWorkSpace_step2_message(message: types.Message):
     )
 
 
-async def workSpaceMenu(call: types.CallbackQuery):
+async def workSpaceMenu(call: types.CallbackQuery, back = False):
     await try_del_message(call.message, bot)
     workSpaceId = call.data
+    if back:
+        workSpaceId = call.data.split(':')[1]
     print(workSpaceId)
     workSpaceInfo = db.getWorkSpaceInfoFromId(workSpaceId)
     print(workSpaceInfo)
@@ -152,6 +155,7 @@ async def exitWorkSpaceMenu(call: types.CallbackQuery):
 async def deleteWorkSpaceMenu(call: types.CallbackQuery): 
     await try_del_message(call.message, bot)
     work_space_id = call.data.split(':')[1] 
+    db.deleteTasksFromWorkSpaceId(work_space_id)
     db.cascadeDropWorkSpacePartisipant(work_space_id)
     db.dropWorkSpace(work_space_id)
     await bot.send_message(
@@ -279,3 +283,58 @@ async def cencelResp(call: types.CallbackQuery):
     call.data = workSpaceId 
     await workSpaceMenu(call)
     
+
+async def getTask(call: types.CallbackQuery, update = False):
+    work_space_id = call.data.split(':')[1]
+    
+    tasks = db.getAllTaskFromWorkSpaceId(work_space_id)
+    print(tasks)
+    if tasks == None or tasks == []:
+        await call.answer(
+            text = '❌ You have`t any tasks.'
+        )
+        return None
+
+    us.updateTaskContainer(call.message.chat.id, tasks)
+    is_admin = bool(db.getIsAdminWorkSpacePartisipant(call.message.chat.id, work_space_id)[0])
+    current_pos = 0
+    len_pos = len(tasks)
+    markup = InlineKeyboardMarkup(row_width = 3)
+    if is_admin:
+        markup.add(
+            InlineKeyboardButton(text = 'Delete', callback_data = 'delete_task'),
+            InlineKeyboardButton(text = 'Update', callback_data = 'update_task'),
+        )
+    markup.add(
+        InlineKeyboardButton(text = '<', callback_data = '<'),     
+        InlineKeyboardButton(text = f'{current_pos+1}/{len_pos}', callback_data = '...'),        
+        InlineKeyboardButton(text = '>', callback_data = '>'),      
+    )
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_manu:{work_space_id}'))
+
+        
+
+    
+    task_id = tasks[current_pos][0]
+    description = tasks[current_pos][1]
+    responsible_user_name_list = tasks[current_pos][2].split(':')
+    responsible_user_name_list = db.getUserInfoFromManyId(tuple(responsible_user_name_list))
+    responsible_users = ', '.join([i[1] for i in responsible_user_name_list])[0:]
+    time_create = tasks[current_pos][3]
+    time_end = tasks[current_pos][4]
+    if update:
+        current_pos = int(us.getUserState(call.message.chat.id).split(':')[0]) + 1
+
+    await try_del_message(call.message, bot)
+    await bot.send_message(
+        chat_id = call.message.chat.id,
+            text = f'''💠 <b>Task id:</b> {task_id}
+├  <b>Description:</b> {description}
+├  <b>Responsible users:</b> {responsible_users}
+├  <b>Time create:</b> {time_create}
+└  <b>Time end:</b> {time_end}''',
+            reply_markup = markup,
+        ) 
+    if update:
+        return None
+    us.updateUserState(call.message.chat.id, f'{current_pos}:{work_space_id}')

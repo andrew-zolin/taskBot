@@ -9,6 +9,7 @@ class UserState(Singleton):
         self.__userState = {}
         self.__taskData = {}
         self.__respUser = {}
+        self.__taskContainer = {}
 
 
     # User state
@@ -47,5 +48,18 @@ class UserState(Singleton):
     def dropRespUser(self, chat_id):
         try:
             self.__respUser.pop(chat_id)
+        except Exception as e:
+            print(e)
+    
+    # Tasks data
+    def getTaskContainer(self, chat_id) -> list:
+        return self.__taskContainer.get(chat_id, [])
+
+    def updateTaskContainer(self, chat_id, users):
+        self.__taskContainer.update({chat_id: users})
+    
+    def dropTaskContainer(self, chat_id):
+        try:
+            self.__taskContainer.pop(chat_id)
         except Exception as e:
             print(e)

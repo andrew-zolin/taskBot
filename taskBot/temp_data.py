@@ -1,4 +1,3 @@
-
 from usefull_func import Singleton
 
 

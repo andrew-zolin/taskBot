@@ -20,16 +20,14 @@ async def callback_handler(call: types.CallbackQuery):
         case data if data.split(':')[0] == '<'                      : await getTask(call, True, '<')
         case data if data.split(':')[0] == '>'                      : await getTask(call, True, '>')
         case data if data.split(':')[0] == 'delete_t'               : await checkDelOrNoTask(call)
-        case data if data.split(':')[0] in ('ap_del_t', 'ca_del_t') : await getChoiceDelOrNoTask(call)
-        case data if data.split(':')[0] == 'back_t_m'               : await joinMeeting(call)
-
-        case data if data.split(':')[0] == 'update_t'               : await updateTask(call)
-        case data if data.split(':')[0] == 'get_meeting'            : await ...
-        case data if data.split(':')[0] == 'create_meeting'         : await ...
-        case data if data.split(':')[0] == 'exit_ws'                : await exitWorkSpaceMenu(call)
-        case data if data.split(':')[0] == 'delete_ws'              : await deleteWorkSpaceMenu(call)
         case data if data.split(':')[0] == 'acceptResp'             : await createTaskStep2(call)
         case data if data.split(':')[0] == 'cencelResp'             : await cencelResp(call)
+        case data if data.split(':')[0] in ('ap_del_t', 'ca_del_t') : await getChoiceDelOrNoTask(call)
+        case data if data.split(':')[0] == 'update_t'               : await updateTask(call)
+        case data if data.split(':')[0] == 'exit_ws'                : await exitWorkSpaceMenu(call)
+        case data if data.split(':')[0] == 'delete_ws'              : await deleteWorkSpaceMenu(call)
+        case data if data.split(':')[0] == 'join_meeting'           : await joinMeeting(call)
+        case data if data.split(':')[0] == 'back_t_m'               : await workSpaceMenu(call, back = True)
         case data if data.split(':')[0] == 'back_ws_manu'           : await workSpaceMenu(call, True)
-        case _    if us.getUserState(call.message.chat.id) == 'my_workspace': await workSpaceMenu(call)
+        case data if us.getUserState(call.message.chat.id) == 'my_workspace': await workSpaceMenu(call)
         # case _ if us.getUserState(call.message.chat.id).split(':')[0] == 'create_task_2': await workSpaceMenu(call)

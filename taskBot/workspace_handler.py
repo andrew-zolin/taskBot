@@ -1,14 +1,15 @@
-from datetime import datetime
-import re
-import zoneinfo
+from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types, executor
+from aiogram.utils.markdown import hide_link
 from aiogram.types.message import ContentType
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from pytest import mark
+from schedul_task import sendReminderTask
 from usefull_func import callAlertFucnInDev, generateCode, try_del_message
 from database_handler import DataBase
 from temp_data import UserState
 from config import *
+import zoneinfo
+import re
 
 
 bot = Bot(BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = DISABLE_WEB_PAGE_PREVIWE)
@@ -115,13 +116,12 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
             InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{workSpaceId}'),
             InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{workSpaceId}'),
         )
-        # markup.add(InlineKeyboardButton(text = 'Create meeting', callback_data = f'create_meeting:{workSpaceId}'))
         markup.add(InlineKeyboardButton(text = 'Exit and delete', callback_data = f'delete_ws:{workSpaceId}'))
 
     else:
         markup.add(
             InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{workSpaceId}'),
-            InlineKeyboardButton(text = 'Get meetings', callback_data = f'get_meeting:{workSpaceId}'),
+            InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{workSpaceId}'),
         )
         markup.add(InlineKeyboardButton(text = 'Exit', callback_data = f'exit_ws:{workSpaceId}'))
 
@@ -218,7 +218,7 @@ async def createTaskStep2(call: types.CallbackQuery):
     us.updateUserState(call.message.chat.id, f'create_task_2:{work_space_id}')
 
 async def createTaskStep3(message: types.Message):
-    await try_del_message(message, bot)
+    # await try_del_message(message, bot)
     work_space_id = us.getUserState(message.chat.id).split(':')[1] 
     us.updateUserState(message.chat.id, f'create_task_3:{work_space_id}')
     us.updateTaskData(message.chat.id, message.text)
@@ -260,17 +260,27 @@ async def createTaskStep4(message: types.Message):
             continue
         await bot.send_message(
             chat_id = int(_id),
-            text = f"""<b>Task id:</b> <em>{task_id}.</em>
+            text = f"""💠 <b>Task id:</b> <em>{task_id}.</em>
 
-<b>Describe:</b> <em>{description}.</em>
+├ <b>Describe:</b> <em>{description}.</em>
 
-<b>Time end:</b> <em>{time_end}.</em>
+├ <b>The time of ending:</b> <em>{time_end}.</em>
+└ <b>The time of creating:</b> <em>{time_create}.</em>
 """ 
         )
 
     us.dropUserState(message.chat.id)
     us.dropTaskData(message.chat.id)
     us.dropRespUser(message.chat.id)
+
+    date_time: datetime = datetime.strptime(time_end, "%d.%m.%Y %H:%M")
+    # first_date = date_time - timedelta(hours=3)
+    first_date: datetime = date_time - timedelta(minutes=1)
+    second_date: datetime = date_time - timedelta(seconds=30)
+    third_date: datetime = date_time
+    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, first_date)
+    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, second_date)
+    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, third_date)
 
 
 async def cencelResp(call: types.CallbackQuery):
@@ -395,8 +405,10 @@ async def updateTask(call: types.CallbackQuery):
 
 
 async def joinMeeting(call: types.CallbackQuery):
+
+    await try_del_message(call.message, bot)
+
     work_space_id = call.data.split(':')[1]
-    task_id = call.data.split(':')[2]
     workSpaceInfo = db.getWorkSpaceInfoFromId(work_space_id)
     workSpaceName = workSpaceInfo[1] 
     leaderChatId = db.getLeaderWorkSpace(work_space_id)[0]
@@ -406,14 +418,17 @@ async def joinMeeting(call: types.CallbackQuery):
     print(meeting_info)
     meeting = 'The link has not yet been created'
     if meeting_info != None:
-        meeting = meeting_info[3]
+        meeting_link = meeting_info[2]
+        print(meeting_link)
+        meeting = hide_link(meeting_link)
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_t_m:{work_space_id}'))
 
-    await call.message.edit_text(
+    await bot.send_message(
+        chat_id = call.message.chat.id,
         text = f'''💠 Name: "{workSpaceName}"
 ├ Leader: "{leaderName}"
-└ Google meet link: {meeting}''',
+{meeting}''', # └ Google meet link:
         reply_markup = markup,
     )
 

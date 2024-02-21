@@ -73,17 +73,15 @@ class WorkSpaceMeetingForm(forms.ModelForm):
         model = WorkSpaceMeeting
         
         fields = (
-            "meeting_id",
             "name",
             "date",
             "invite_link",
             "work_space",
         )
         widgets = {
-            "meeting_id": forms.NumberInput,
             "name": forms.TextInput,
             "date": forms.TextInput,
-            "invite_link": forms.DateTimeInput,
+            "invite_link": forms.TextInput,
             "work_space": forms.NumberInput,
         }
 

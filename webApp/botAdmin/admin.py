@@ -26,5 +26,5 @@ class WorkSpaceTaskAdmin(admin.ModelAdmin):
     
 @admin.register(WorkSpaceMeeting)
 class WorkSpacemeetingAdmin(admin.ModelAdmin):
-    list_display = ('meeting_id', 'name', 'date', 'invite_link', 'work_space',)
+    list_display = ('name', 'date', 'invite_link', 'work_space',)
     form = WorkSpaceMeetingForm

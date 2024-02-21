@@ -138,8 +138,9 @@ class WorkSpaceMeeting(models.Model):
         verbose_name = 'Название встречи',
     )
 
-    date = models.DateTimeField(
+    date = models.CharField(
         # default = datetime.datetime.now(),
+        max_length = 200,
         verbose_name = 'Дата и время встречи',
     )
 

@@ -1,4 +1,4 @@
-### TaskBot
+# TaskBot
 
 ## Install requirements
 

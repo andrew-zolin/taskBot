@@ -8,12 +8,11 @@
 ## Preparing
 
 #### Create tokens.txt in the base directory with same text:
-<ul>
-    <li>
-    TEST==your_test_bot_token
+<pre>
+    TEST==your_test_bot_token\n
     MAIN==your_main_bot_token
-    </li>      
-</ul>
+</pre>      
+
 
 #### Create data base in the webApp directory
 <ul>

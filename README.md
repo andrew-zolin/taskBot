@@ -9,8 +9,8 @@
 
 #### Create tokens.txt in the base directory with same text:
 <pre>
-    TEST==your_test_bot_token\n
-    MAIN==your_main_bot_token
+TEST==your_test_bot_token
+MAIN==your_main_bot_token
 </pre>      
 
 

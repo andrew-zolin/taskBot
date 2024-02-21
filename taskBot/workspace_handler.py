@@ -397,16 +397,23 @@ async def updateTask(call: types.CallbackQuery):
 async def joinMeeting(call: types.CallbackQuery):
     work_space_id = call.data.split(':')[1]
     task_id = call.data.split(':')[2]
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_t_m:{work_space_id}'))
     workSpaceInfo = db.getWorkSpaceInfoFromId(work_space_id)
     workSpaceName = workSpaceInfo[1] 
     leaderChatId = db.getLeaderWorkSpace(work_space_id)[0]
     leaderName = db.getFirstNameFromChatId(leaderChatId)[0]
+
+    meeting_info = db.getMeetingFromWorkSpaceId(work_space_id)
+    print(meeting_info)
+    meeting = 'The link has not yet been created'
+    if meeting_info != None:
+        meeting = meeting_info[3]
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_t_m:{work_space_id}'))
+
     await call.message.edit_text(
         text = f'''💠 Name: "{workSpaceName}"
 ├ Leader: "{leaderName}"
-└ Google meet link: https://ссылка''',
+└ Google meet link: {meeting}''',
         reply_markup = markup,
     )
 

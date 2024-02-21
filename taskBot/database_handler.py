@@ -166,5 +166,8 @@ class DataBase(Singleton):
     def getAllTasksFromWorkSpaceId(self, work_space_id):
         return self.__select('task_id', 'workSpaceTask', {'work_space_id': work_space_id}, fetchall = True)
 
-    
+    # Meeting handler 
+    def getMeetingFromWorkSpaceId(self, work_space_id):
+        meeting = self.__select('*', 'workSpaceMeeting', {'work_space_id': work_space_id})
+        return meeting 
     

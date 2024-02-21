@@ -21,6 +21,8 @@ async def callback_handler(call: types.CallbackQuery):
         case data if data.split(':')[0] == '>'                      : await getTask(call, True, '>')
         case data if data.split(':')[0] == 'delete_t'               : await checkDelOrNoTask(call)
         case data if data.split(':')[0] in ('ap_del_t', 'ca_del_t') : await getChoiceDelOrNoTask(call)
+        case data if data.split(':')[0] == 'back_t_m'               : await joinMeeting(call)
+
         case data if data.split(':')[0] == 'update_t'               : await updateTask(call)
         case data if data.split(':')[0] == 'get_meeting'            : await ...
         case data if data.split(':')[0] == 'create_meeting'         : await ...

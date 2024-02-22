@@ -8,7 +8,7 @@ class Config:
     TEST_TOKEN = token_list[0].split('==')[1].replace('\n', '')
     MAIN_TOKEN = token_list[1].split('==')[1].replace('\n', '')
 
-    BOT_TOKEN = MAIN_TOKEN
+    BOT_TOKEN = TEST_TOKEN
 
     DISABLE_WEB_PAGE_PREVIWE = False
 

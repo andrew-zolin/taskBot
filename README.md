@@ -18,6 +18,7 @@ MAIN==your_main_bot_token
 <ul>
     <li><code>python manage.py makemigrations</code></li>
     <li><code>python manage.py migrate</code></li>
+    <li><code>python manage.py createsuperuser</code></li>
 </ul>
 
 

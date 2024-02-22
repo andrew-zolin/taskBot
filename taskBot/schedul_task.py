@@ -2,13 +2,13 @@ from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types.message import ContentType
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime
-from config import *
+from config import config
 import zoneinfo
 import asyncio
 import pytz
 
 
-bot = Bot(BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = DISABLE_WEB_PAGE_PREVIWE)
+bot = Bot(config.BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = config.DISABLE_WEB_PAGE_PREVIWE)
 
 
 async def sendReminder(message: types.Message, responsible_users_list, task_id, description, time_create, time_end):

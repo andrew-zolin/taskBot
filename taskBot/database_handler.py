@@ -1,5 +1,5 @@
 from usefull_func import *
-from config import *
+from config import config
 import sqlite3
 
 
@@ -7,7 +7,7 @@ class DataBase(Singleton):
     
     def init(self):
         super().__init__()
-        self.db_path = DATABASE_PATH
+        self.db_path = config.DATABASE_PATH
 
     def __select(self, _select: tuple = None, _from: str = None, _where: dict = None, fetchall = False):
         with sqlite3.connect(self.db_path) as c:

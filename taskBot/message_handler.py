@@ -4,10 +4,10 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from command_handler import *
 from workspace_handler import *
 from temp_data import UserState
-from config import *
+from config import config
 
 
-bot = Bot(BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = DISABLE_WEB_PAGE_PREVIWE)
+bot = Bot(config.BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = config.DISABLE_WEB_PAGE_PREVIWE)
 us = UserState()
 
 

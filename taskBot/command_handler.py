@@ -4,17 +4,18 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeybo
 from database_handler import DataBase
 from temp_data import UserState
 from usefull_func import try_del_message
-from config import *
+from config import config
 
 
-bot = Bot(BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = DISABLE_WEB_PAGE_PREVIWE)
+bot = Bot(config.BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = config.DISABLE_WEB_PAGE_PREVIWE)
 db = DataBase()
 us = UserState()
 
 
 async def start_command(message: types.Message):
     await try_del_message(message, bot)
-
+    me = await bot.get_me()
+    print(me) 
     us.updateUserState(message.chat.id, 'start')
 
     userInfo = db.getUserInfo(message.chat.id)
@@ -30,7 +31,7 @@ async def start_command(message: types.Message):
 
     await bot.send_photo(
         chat_id = message.chat.id,
-        photo = open(f'{MEDIA_PATH}image/main.png', 'rb'),
+        photo = open(f'{config.MEDIA_PATH}image/main.png', 'rb'),
         caption = f'''Hello {message.chat.first_name}''',
         reply_markup = markup,
     )

@@ -1,8 +1,9 @@
 from aiogram import Bot, types
-from config import *
-from string import digits, ascii_letters, punctuation
+from string import digits, ascii_letters
+from config import config
 import datetime
 import random
+
 
 class Singleton(object):
 
@@ -38,9 +39,9 @@ def errorLoger(func):
             res = func(*args, **kwargs)
             return res 
         except Exception as error:
-            with open(LOGGING_PATH, 'r', encoding = 'UTF-8') as f:
+            with open(config.LOGGING_PATH, 'r', encoding = 'UTF-8') as f:
                 oldData = f.read()
-            with open(LOGGING_PATH, 'w', encoding = 'UTF-8') as f:
+            with open(config.LOGGING_PATH, 'w', encoding = 'UTF-8') as f:
                 dateTime = str(datetime.datetime.now())
                 errorMessage = f'''\n---------------------------
 Имя функции: {func.__name__}

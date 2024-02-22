@@ -7,12 +7,12 @@ from schedul_task import sendReminderTask
 from usefull_func import callAlertFucnInDev, generateCode, try_del_message
 from database_handler import DataBase
 from temp_data import UserState
-from config import *
+from config import config
 import zoneinfo
 import re
 
 
-bot = Bot(BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = DISABLE_WEB_PAGE_PREVIWE)
+bot = Bot(config.BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = config.DISABLE_WEB_PAGE_PREVIWE)
 db = DataBase()
 us = UserState()
 
@@ -128,11 +128,11 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
     leaderChatId = db.getLeaderWorkSpace(workSpaceId)[0]
     leaderName = db.getFirstNameFromChatId(leaderChatId)[0]
     workSpaceName = workSpaceInfo[1]
-    referalLink = TEMPLATE_REFERAL_LINK.replace('ID', workSpaceInfo[2])
+    referalLink = config.TEMPLATE_REFERAL_LINK.replace('ID', workSpaceInfo[2])
 
     await bot.send_photo(
         chat_id = call.message.chat.id,
-        photo = open(f'{MEDIA_PATH}image/workSpace.png', 'rb'),
+        photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
         caption = f'''💠 Name: "{workSpaceName}"
 ├ Leader: "{leaderName}"
 └ Referal Link: `{referalLink}`

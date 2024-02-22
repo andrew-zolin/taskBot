@@ -8,14 +8,16 @@ class Config:
     TEST_TOKEN = token_list[0].split('==')[1].replace('\n', '')
     MAIN_TOKEN = token_list[1].split('==')[1].replace('\n', '')
 
-    BOT_TOKEN = TEST_TOKEN
+    BOT_TOKEN = MAIN_TOKEN
 
     DISABLE_WEB_PAGE_PREVIWE = False
-    DATABASE_PATH = '../webApp/db.sqlite3'
 
-    # https://t.me/my_test_train_bot
     TEMPLATE_REFERAL_LINK: str = 'https://t.me/USERNAME?start=ID'
 
+    SCHEDULE_TASK_1: int = 60 #Time in seconds
+    SCHEDULE_TASK_2: int = 30 #Time in seconds
+
+    DATABASE_PATH = '../webApp/db.sqlite3'
     LOGGING_PATH = '../logging/log.txt'
     MEDIA_PATH = '../webApp/media/'
 
@@ -27,7 +29,6 @@ class Config:
         # global TEMPLATE_REFERAL_LINK 
         cls.TEMPLATE_REFERAL_LINK = cls.TEMPLATE_REFERAL_LINK.replace('USERNAME', username)
         print(f'\nTEMPLATE_REFERAL_LINK: {cls.TEMPLATE_REFERAL_LINK}\n')
-        
 
 
 config = Config()

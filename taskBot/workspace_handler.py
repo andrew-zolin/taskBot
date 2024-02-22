@@ -134,8 +134,8 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
         chat_id = call.message.chat.id,
         photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
         caption = f'''💠 Name: "{workSpaceName}"
-├ Leader: "{leaderName}"
-└ Referal Link: `{referalLink}`
+├  Leader: "{leaderName}"
+└  Referal Link: `{referalLink}`
 ''',    
         parse_mode = 'markdown',
         reply_markup = markup,
@@ -262,10 +262,10 @@ async def createTaskStep4(message: types.Message):
             chat_id = int(_id),
             text = f"""💠 <b>Task id:</b> <em>{task_id}.</em>
 
-├ <b>Describe:</b> <em>{description}.</em>
+├  <b>Describe:</b> <em>{description}.</em>
 
-├ <b>The time of ending:</b> <em>{time_end}.</em>
-└ <b>The time of creating:</b> <em>{time_create}.</em>
+├  <b>The time of ending:</b> <em>{time_end}.</em>
+└  <b>The time of creating:</b> <em>{time_create}.</em>
 """ 
         )
 
@@ -275,8 +275,8 @@ async def createTaskStep4(message: types.Message):
 
     date_time: datetime = datetime.strptime(time_end, "%d.%m.%Y %H:%M")
     # first_date = date_time - timedelta(hours=3)
-    first_date: datetime = date_time - timedelta(minutes=1)
-    second_date: datetime = date_time - timedelta(seconds=30)
+    first_date: datetime = date_time - timedelta(seconds = config.SCHEDULE_TASK_1)
+    second_date: datetime = date_time - timedelta(seconds = config.SCHEDULE_TASK_2)
     third_date: datetime = date_time
     await sendReminderTask(message, responsible_users_list, task_id, description, time_create, first_date)
     await sendReminderTask(message, responsible_users_list, task_id, description, time_create, second_date)

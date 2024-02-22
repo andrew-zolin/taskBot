@@ -32,7 +32,13 @@ async def start_command(message: types.Message):
     await bot.send_photo(
         chat_id = message.chat.id,
         photo = open(f'{config.MEDIA_PATH}image/main.png', 'rb'),
-        caption = f'''Hello {message.chat.first_name}''',
+        caption = f'''⚡ Hello <em>"{message.chat.first_name}"</em>
+
+💠 <b>TaskBot</b>:
+
+├-   Your smart task manager. 
+├-   Simplify your to-do lists, 
+└-   stay organized effortlessly.''',
         reply_markup = markup,
     )
 

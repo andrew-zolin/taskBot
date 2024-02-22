@@ -18,12 +18,12 @@ async def sendReminder(message: types.Message, responsible_users_list, task_id, 
         await bot.send_message(
             chat_id = int(_id),
             text = f""" ⚡ <b>Reminder about task</b>
-├ <b>Task id:</b> <em>{task_id}.</em>
+├  <b>Task id:</b> <em>{task_id}.</em>
 
-├ <b>Describe:</b> <em>{description}.</em>
+├  <b>Describe:</b> <em>{description}.</em>
 
-├ <b>The time of ending:</b> <em>{time_end.strftime("%d.%m.%Y %H:%M")}.</em>
-└ <b>The time of creating:</b> <em>{time_create}.</em>
+├  <b>The time of ending:</b> <em>{time_end.strftime("%d.%m.%Y %H:%M")}.</em>
+└  <b>The time of creating:</b> <em>{time_create}.</em>
 """,
         )
 

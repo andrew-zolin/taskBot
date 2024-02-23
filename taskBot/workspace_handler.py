@@ -367,7 +367,6 @@ async def createTaskStep4(message: types.Message) -> None:
         await bot.send_message(
             chat_id = int(_id),
             text = f"""💠 <b>Task id:</b> <em>{task_id}.</em>
-├  <b>Responsible users:</b> {responsible_users}
 
 ├  <b>Description:</b> {description}.
 

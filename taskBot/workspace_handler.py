@@ -4,6 +4,7 @@ from aiogram.utils.markdown import hide_link
 from aiogram.types.message import ContentType
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from schedul_task import sendReminderTask
+from command_handler import start_command
 from usefull_func import callAlertFucnInDev, generateCode, try_del_message, try_del_message_from_ids
 from database_handler import DataBase
 from temp_data import UserState
@@ -15,6 +16,26 @@ import re
 bot = Bot(config.BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = config.DISABLE_WEB_PAGE_PREVIWE)
 db = DataBase()
 us = UserState()
+
+
+async def get_my_workspaces_callback(call: types.CallbackQuery):
+    us.updateUserState(call.message.chat.id, 'my_workspace')
+
+    markup = InlineKeyboardMarkup(row_width = 2)
+    nameList = db.getWorkSpaceNamesAndIdFromUser(call.message.chat.id)
+    print(nameList)
+    if nameList != None:
+        markup.add(*[InlineKeyboardButton(text = name, callback_data = _id) for _id, name in nameList])
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_start'))
+
+    msg = await call.message.edit_caption(
+        caption = '⚡ Your work spaces:',
+        reply_markup = markup,
+    )
+
+    message_ids = us.getMessagesToDelete(call.message.chat.id)
+    message_ids.append(msg)
+    us.updateMessagesToDelete(call.message.chat.id, message_ids)
 
 
 async def joinWorkSpace_step1_message(message: types.Message):
@@ -52,11 +73,7 @@ async def joinWorkSpace_step2_message(message: types.Message):
         row_info = db.getAllWorkSpaceInfoFromChatIdAndWorkSpaceId(message.chat.id, work_space_id)
         if row_info == None:
             db.addWorkSpacePartisipant(work_space_name, message.chat.id, work_space_id)
-#             await message.answer(
-#                 text = f'''💠 You have joined the "{work_space_name}" workspace. 
-
-# ⚡ You can get all your work spaces on /my_workspace command.''',
-#             )
+#            
             print(work_space_id)
             workSpaceInfo = db.getWorkSpaceInfoFromId(work_space_id)
             print(workSpaceInfo)
@@ -82,7 +99,7 @@ async def joinWorkSpace_step2_message(message: types.Message):
             workSpaceName = workSpaceInfo[1]
             referalLink = config.TEMPLATE_REFERAL_LINK.replace('ID', workSpaceInfo[2])
 
-            await bot.send_photo(
+            msg = await bot.send_photo(
                 chat_id = message.chat.id,
                 photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
                 caption = f'''💠 Space Name: "{workSpaceName}"
@@ -137,18 +154,15 @@ async def createWorkSpace_step2_message(message: types.Message):
             workSpaceId = db.getWorkSpaceId(workSpaceName)
             db.addWorkSpacePartisipant(workSpaceName, message.chat.id, workSpaceId, 1)
         else:
-            await message.answer(
+            msg = await message.answer(
                 text = '❌ This name is taken, please try again'
             )
+            message_ids = us.getMessagesToDelete(message.chat.id)
+            message_ids.append(msg.message_id)
+            us.updateMessagesToDelete(message_ids)
             return None
     except Exception as e:
         print(e)
-
-#     await message.answer(
-#         text = '''💠 Work space has been created.
-
-# ⚡ You can get all your work spaces on /my_workspace command.'''
-#     )
 
     print(workSpaceId)
     workSpaceInfo = db.getWorkSpaceInfoFromId(workSpaceId)
@@ -218,7 +232,7 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
     workSpaceName = workSpaceInfo[1]
     referalLink = config.TEMPLATE_REFERAL_LINK.replace('ID', workSpaceInfo[2])
 
-    await bot.send_photo(
+    msg = await bot.send_photo(
         chat_id = call.message.chat.id,
         photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
         caption = f'''💠 Space Name: "{workSpaceName}"
@@ -229,17 +243,16 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
         reply_markup = markup,
     )
 
+    message_ids = us.getMessagesToDelete(call.message.chat.id)
+    message_ids.append(msg.message_id)
+    us.updateMessagesToDelete(message_ids)
+
 async def exitWorkSpaceMenu(call: types.CallbackQuery): 
     await try_del_message(call.message, bot)
     work_space_id = call.data.split(':')[1] 
     db.dropWorkSpacePartisipant(call.message.chat.id, work_space_id)
-    await bot.send_message(
-        chat_id = call.message.chat.id,
-        text = '''💠 You have left the workspace.
-
-⚡ You can get all your workspaces on /my_workspace command.
-''',
-    )
+    
+    await start_command(call.message, True)
 
 async def deleteWorkSpaceMenu(call: types.CallbackQuery): 
     await try_del_message(call.message, bot)
@@ -247,14 +260,9 @@ async def deleteWorkSpaceMenu(call: types.CallbackQuery):
     db.deleteTasksFromWorkSpaceId(work_space_id)
     db.cascadeDropWorkSpacePartisipant(work_space_id)
     db.dropWorkSpace(work_space_id)
-    await bot.send_message(
-        chat_id = call.message.chat.id,
-        text = '''💠 Workspace has been deleted.
-
-⚡ You can get all your workspaces on /my_workspace command.
-''',
-    )
-
+  
+    await start_command(call.message, True)
+    
 # Create task
 async def createTaskStep1(call: types.CallbackQuery):
     message_ids = us.getMessagesToDelete(call.message.chat.id)

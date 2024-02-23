@@ -13,6 +13,7 @@ us = UserState()
 
 
 async def start_command(message: types.Message, back = False):
+
     message_ids = us.getMessagesToDelete(message.chat.id)
     await try_del_message_from_ids(message, bot, message_ids)
     await try_del_message(message, bot)
@@ -23,10 +24,10 @@ async def start_command(message: types.Message, back = False):
     if userInfo == None:
         db.addUser(message.chat.id, message.chat.first_name)
 
-    markup = ReplyKeyboardMarkup(row_width = 1, resize_keyboard = True)
+    markup = InlineKeyboardMarkup(row_width = 2)
     markup.add(
-        KeyboardButton(text = 'My workspaces 🌝'),
-        KeyboardButton(text = 'Create new 🌚'),
+        InlineKeyboardButton(text = 'My workspaces 🌝', callback_data = 'my_workspaces'),
+        InlineKeyboardButton(text = 'Create new 🌚', callback_data = 'create_new_ws'),
     )
 
     msg = await bot.send_photo(
@@ -45,6 +46,8 @@ async def start_command(message: types.Message, back = False):
     if back: return None
     if " " in message.text: 
         try:
+            message_ids = us.getMessagesToDelete(message.chat.id)
+            await try_del_message_from_ids(message, bot, message_ids)
             work_space_code = message.text.split()[1]
             work_space_id = db.getWorkSpaceIdFromCode(work_space_code)
             if work_space_id == None:
@@ -60,11 +63,46 @@ async def start_command(message: types.Message, back = False):
             row_info = db.getAllWorkSpaceInfoFromChatIdAndWorkSpaceId(message.chat.id, work_space_id)
             if row_info == None:
                 db.addWorkSpacePartisipant(work_space_name, message.chat.id, work_space_id)
-                msg = await message.answer(
-                    text = f'''💠 You have joined the "{work_space_name}" workspace. 
+#                 msg = await message.answer(
+#                     text = f'''💠 You have joined the "{work_space_name}" workspace. 
             
 
-⚡ You can get all your work spaces on /my_workspace command.''',
+# ⚡ You can get all your work spaces on /my_workspace command.''',
+#                 )
+                print(work_space_id)
+                workSpaceInfo = db.getWorkSpaceInfoFromId(work_space_id)
+                print(workSpaceInfo)
+                is_admin = bool(db.getIsAdminWorkSpacePartisipant(message.chat.id, work_space_id)[0])
+                markup = InlineKeyboardMarkup(row_width = 2)
+                if is_admin:        
+                    markup.add(InlineKeyboardButton(text = 'Create task', callback_data = f'create_task:{work_space_id}'))
+                    markup.add(
+                        InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{work_space_id}'),
+                        InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{work_space_id}'),
+                    )
+                    markup.add(InlineKeyboardButton(text = 'Exit and delete', callback_data = f'delete_ws:{work_space_id}'))
+                else:
+                    markup.add(
+                        InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{work_space_id}'),
+                        InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{work_space_id}'),
+                    )
+                    markup.add(InlineKeyboardButton(text = 'Exit', callback_data = f'exit_ws:{work_space_id}'))
+                markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_catalog'))
+
+                leaderChatId = db.getLeaderWorkSpace(work_space_id)[0]
+                leaderName = db.getFirstNameFromChatId(leaderChatId)[0]
+                workSpaceName = workSpaceInfo[1]
+                referalLink = config.TEMPLATE_REFERAL_LINK.replace('ID', workSpaceInfo[2])
+
+                msg = await bot.send_photo(
+                    chat_id = message.chat.id,
+                    photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
+                    caption = f'''💠 Space Name: "{workSpaceName}"
+            ├  Leader: "{leaderName}"
+            └  Referal Link: `{referalLink}`
+            ''',    
+                    parse_mode = 'markdown',
+                    reply_markup = markup,
                 )
             else:
                 msg = await message.answer(

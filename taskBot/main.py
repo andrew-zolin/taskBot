@@ -17,6 +17,9 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands = 'start')
 async def start(message: types.Message):
+    await message.answer(
+        text='⚡️'
+    )
     if 'USERNAME' in  config.TEMPLATE_REFERAL_LINK:
         await config.updateRefLink(bot)
     await start_command(message)

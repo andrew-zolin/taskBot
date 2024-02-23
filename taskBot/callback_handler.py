@@ -15,6 +15,8 @@ async def callback_handler(call: types.CallbackQuery):
     
     data = call.data
     match data:
+        case data if data == 'my_workspaces'                        : await get_my_workspaces_callback(call)
+        case data if data == 'create_new_ws'                        : await createWorkSpace_step1_message(call.message)
         case data if data.split(':')[0] == 'create_task'            : await createTaskStep1(call)
         case data if data.split(':')[0] == 'addResp'                : await createTaskStep1(call)
         case data if data.split(':')[0] == 'get_task'               : await getTask(call)

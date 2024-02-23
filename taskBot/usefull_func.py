@@ -18,21 +18,32 @@ class Singleton(object):
     def init(self, *args, **kwargs):
         pass
 
-
 async def try_del_message(message: types.Message, bot: Bot):
     try:
         await bot.delete_message(
             chat_id = message.chat.id,
             message_id = message.message_id,
         )
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
+async def try_del_message_from_ids(message: types.Message, bot: Bot, message_ids: list):
+    try:
+        print(message_ids)
+        for _id in message_ids:
+            try:
+                await bot.delete_message(
+                    chat_id = message.chat.id,
+                    message_id = _id,
+                )
+            except Exception as e:
+                print(e)
+    except Exception as e:
+        print(e)
 
 def generateCode(symbols = digits+ascii_letters, length = 16):
     return ''.join([random.choice(symbols) for _ in range(length)]) 
     
-
 def errorLoger(func):
     def wrapper(*args, **kwargs):
         try:

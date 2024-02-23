@@ -68,8 +68,8 @@ class UserState(Singleton):
     def getMessagesToDelete(self, chat_id) -> list:
         return self.__messagesToDelete.get(chat_id, [])
 
-    def updateMessagesToDelete(self, chat_id, message):
-        self.__messagesToDelete.update({chat_id: message})
+    def updateMessagesToDelete(self, chat_id, message_ids):
+        self.__messagesToDelete.update({chat_id: message_ids})
     
     def dropMessagesToDelete(self, chat_id):
         try:

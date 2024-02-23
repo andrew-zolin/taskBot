@@ -1,6 +1,7 @@
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types.message import ContentType
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from command_handler import *
 from workspace_handler import *
 from temp_data import UserState
 from config import config
@@ -28,6 +29,8 @@ async def callback_handler(call: types.CallbackQuery):
         case data if data.split(':')[0] == 'delete_ws'              : await deleteWorkSpaceMenu(call)
         case data if data.split(':')[0] == 'join_meeting'           : await joinMeeting(call)
         case data if data.split(':')[0] == 'back_t_m'               : await workSpaceMenu(call, back = True)
+        case data if data.split(':')[0] == 'back_start'             : await start_command(call.message, back = True)
         case data if data.split(':')[0] == 'back_ws_manu'           : await workSpaceMenu(call, True)
+        case data if data.split(':')[0] == 'back_ws_catalog'        : await get_my_workspaces_command(call.message)
         case data if us.getUserState(call.message.chat.id) == 'my_workspace': await workSpaceMenu(call)
         # case _ if us.getUserState(call.message.chat.id).split(':')[0] == 'create_task_2': await workSpaceMenu(call)

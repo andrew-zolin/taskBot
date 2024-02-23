@@ -20,10 +20,9 @@ async def sendReminder(message: types.Message, responsible_users_list, task_id, 
             text = f""" ⚡ <b>Reminder about task</b>
 ├  <b>Task id:</b> <em>{task_id}.</em>
 
-├  <b>Describe:</b> <em>{description}.</em>
+├  <b>Description:</b> {description}.
 
-├  <b>The time of ending:</b> <em>{time_end.strftime("%d.%m.%Y %H:%M")}.</em>
-└  <b>The time of creating:</b> <em>{time_create}.</em>
+└  <b>Deadline:</b> <em>{time_end.strftime("%d.%m.%Y %H:%M")}.</em>
 """,
         )
 

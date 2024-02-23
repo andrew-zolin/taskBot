@@ -4,7 +4,7 @@ from aiogram.utils.markdown import hide_link
 from aiogram.types.message import ContentType
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from schedul_task import sendReminderTask
-from usefull_func import callAlertFucnInDev, generateCode, try_del_message
+from usefull_func import callAlertFucnInDev, generateCode, try_del_message, try_del_message_from_ids
 from database_handler import DataBase
 from temp_data import UserState
 from config import config
@@ -18,56 +18,108 @@ us = UserState()
 
 
 async def joinWorkSpace_step1_message(message: types.Message):
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    await try_del_message_from_ids(message, bot, message_ids)
     await try_del_message(message, bot)
-
+    
     us.updateUserState(message.chat.id, 'joinWorkSpace')
 
-    await message.answer(
+    msg = await message.answer(
         text = '📝 Enter workspace code:'
     )
-
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    message_ids.append(msg.message_id)
+    us.updateMessagesToDelete(message.chat.id, message_ids)
 
 async def joinWorkSpace_step2_message(message: types.Message):
-    # await try_del_message(message, bot)
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    await try_del_message_from_ids(message, bot, message_ids)
+    await try_del_message(message, bot)
 
     try:
         work_space_code = message.text
         work_space_id = db.getWorkSpaceIdFromCode(work_space_code)
         if work_space_id == None:
-            await message.answer(
+            msg = await message.answer(
                 text = '❌ Incorrect code, please try again'
             )
+            message_ids = us.getMessagesToDelete(message.chat.id)
+            message_ids.append(msg.message_id)
+            us.updateMessagesToDelete(message.chat.id, message_ids)
             return None
         else: work_space_id = work_space_id[0] 
         work_space_name = db.getWorkSpaceInfoFromId(work_space_id)[1]
         row_info = db.getAllWorkSpaceInfoFromChatIdAndWorkSpaceId(message.chat.id, work_space_id)
         if row_info == None:
             db.addWorkSpacePartisipant(work_space_name, message.chat.id, work_space_id)
-            await message.answer(
-                text = f'''💠 You have joined the "{work_space_name}" workspace. 
+#             await message.answer(
+#                 text = f'''💠 You have joined the "{work_space_name}" workspace. 
 
-⚡ You can get all your work spaces on /my_workspace command.''',
+# ⚡ You can get all your work spaces on /my_workspace command.''',
+#             )
+            print(work_space_id)
+            workSpaceInfo = db.getWorkSpaceInfoFromId(work_space_id)
+            print(workSpaceInfo)
+            is_admin = bool(db.getIsAdminWorkSpacePartisipant(message.chat.id, work_space_id)[0])
+            markup = InlineKeyboardMarkup(row_width = 2)
+            if is_admin:        
+                markup.add(InlineKeyboardButton(text = 'Create task', callback_data = f'create_task:{work_space_id}'))
+                markup.add(
+                    InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{work_space_id}'),
+                    InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{work_space_id}'),
+                )
+                markup.add(InlineKeyboardButton(text = 'Exit and delete', callback_data = f'delete_ws:{work_space_id}'))
+            else:
+                markup.add(
+                    InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{work_space_id}'),
+                    InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{work_space_id}'),
+                )
+                markup.add(InlineKeyboardButton(text = 'Exit', callback_data = f'exit_ws:{work_space_id}'))
+            markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_catalog'))
+
+            leaderChatId = db.getLeaderWorkSpace(work_space_id)[0]
+            leaderName = db.getFirstNameFromChatId(leaderChatId)[0]
+            workSpaceName = workSpaceInfo[1]
+            referalLink = config.TEMPLATE_REFERAL_LINK.replace('ID', workSpaceInfo[2])
+
+            await bot.send_photo(
+                chat_id = message.chat.id,
+                photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
+                caption = f'''💠 Space Name: "{workSpaceName}"
+        ├  Leader: "{leaderName}"
+        └  Referal Link: `{referalLink}`
+        ''',    
+                parse_mode = 'markdown',
+                reply_markup = markup,
             )
+
         else:
-            await message.answer(
+            msg = await message.answer(
                 text = f'''✅ You have already joined at the "{work_space_name}" workspace.''',
             )
+            message_ids = us.getMessagesToDelete(message.chat.id)
+            message_ids.append(msg.message_id)
+            us.updateMessagesToDelete(message.chat.id, message_ids)
         us.dropUserState(message.chat.id)
     except Exception as e:
         print(e)
 
 
 async def createWorkSpace_step1_message(message: types.Message):
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    await try_del_message_from_ids(message, bot, message_ids)
     await try_del_message(message, bot)
 
     us.updateUserState(message.chat.id, 'createWorkSpace')
 
-    await message.answer(
+    msg = await message.answer(
         text = '📝 Enter workspace name:'
     )
-
+    us.updateMessagesToDelete(message.chat.id, [msg.message_id])
 
 async def createWorkSpace_step2_message(message: types.Message):
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    await try_del_message_from_ids(message, bot, message_ids)
     await try_del_message(message, bot)
     us.dropUserState(message.chat.id)
     workSpaceName = message.text
@@ -82,8 +134,8 @@ async def createWorkSpace_step2_message(message: types.Message):
         work_space_names_list = db.getAllWorkSpaceNames()
         if workSpaceName not in work_space_names_list:
             db.addWorkSpace(workSpaceName, newWorkSpaceCode)
-            _id = db.getWorkSpaceId(workSpaceName)
-            db.addWorkSpacePartisipant(workSpaceName, message.chat.id, _id, 1)
+            workSpaceId = db.getWorkSpaceId(workSpaceName)
+            db.addWorkSpacePartisipant(workSpaceName, message.chat.id, workSpaceId, 1)
         else:
             await message.answer(
                 text = '❌ This name is taken, please try again'
@@ -92,10 +144,46 @@ async def createWorkSpace_step2_message(message: types.Message):
     except Exception as e:
         print(e)
 
-    await message.answer(
-        text = '''💠 Work space has been created.
+#     await message.answer(
+#         text = '''💠 Work space has been created.
 
-⚡ You can get all your work spaces on /my_workspace command.'''
+# ⚡ You can get all your work spaces on /my_workspace command.'''
+#     )
+
+    print(workSpaceId)
+    workSpaceInfo = db.getWorkSpaceInfoFromId(workSpaceId)
+    print(workSpaceInfo)
+    is_admin = bool(db.getIsAdminWorkSpacePartisipant(message.chat.id, workSpaceId)[0])
+    markup = InlineKeyboardMarkup(row_width = 2)
+    if is_admin:        
+        markup.add(InlineKeyboardButton(text = 'Create task', callback_data = f'create_task:{workSpaceId}'))
+        markup.add(
+            InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{workSpaceId}'),
+            InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{workSpaceId}'),
+        )
+        markup.add(InlineKeyboardButton(text = 'Exit and delete', callback_data = f'delete_ws:{workSpaceId}'))
+    else:
+        markup.add(
+            InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{workSpaceId}'),
+            InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{workSpaceId}'),
+        )
+        markup.add(InlineKeyboardButton(text = 'Exit', callback_data = f'exit_ws:{workSpaceId}'))
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_catalog'))
+
+    leaderChatId = db.getLeaderWorkSpace(workSpaceId)[0]
+    leaderName = db.getFirstNameFromChatId(leaderChatId)[0]
+    workSpaceName = workSpaceInfo[1]
+    referalLink = config.TEMPLATE_REFERAL_LINK.replace('ID', workSpaceInfo[2])
+
+    await bot.send_photo(
+        chat_id = message.chat.id,
+        photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
+        caption = f'''💠 Space Name: "{workSpaceName}"
+├  Leader: "{leaderName}"
+└  Referal Link: `{referalLink}`
+''',    
+        parse_mode = 'markdown',
+        reply_markup = markup,
     )
 
 
@@ -117,13 +205,13 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
             InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{workSpaceId}'),
         )
         markup.add(InlineKeyboardButton(text = 'Exit and delete', callback_data = f'delete_ws:{workSpaceId}'))
-
     else:
         markup.add(
             InlineKeyboardButton(text = 'Get tasks', callback_data = f'get_task:{workSpaceId}'),
             InlineKeyboardButton(text = 'Join meeting', callback_data = f'join_meeting:{workSpaceId}'),
         )
         markup.add(InlineKeyboardButton(text = 'Exit', callback_data = f'exit_ws:{workSpaceId}'))
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_catalog'))
 
     leaderChatId = db.getLeaderWorkSpace(workSpaceId)[0]
     leaderName = db.getFirstNameFromChatId(leaderChatId)[0]
@@ -133,7 +221,7 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
     await bot.send_photo(
         chat_id = call.message.chat.id,
         photo = open(f'{config.MEDIA_PATH}image/workSpace.png', 'rb'),
-        caption = f'''💠 Name: "{workSpaceName}"
+        caption = f'''💠 Space Name: "{workSpaceName}"
 ├  Leader: "{leaderName}"
 └  Referal Link: `{referalLink}`
 ''',    
@@ -169,6 +257,8 @@ async def deleteWorkSpaceMenu(call: types.CallbackQuery):
 
 # Create task
 async def createTaskStep1(call: types.CallbackQuery):
+    message_ids = us.getMessagesToDelete(call.message.chat.id)
+    await try_del_message_from_ids(call.message, bot, message_ids)
     await try_del_message(call.message, bot)
     
     work_space_id = call.data.split(':')[1] 
@@ -211,25 +301,37 @@ async def createTaskStep2(call: types.CallbackQuery):
     await try_del_message(call.message, bot)
     work_space_id = call.data.split(':')[1] 
 
-    await bot.send_message(
+    msg = await bot.send_message(
         chat_id = call.message.chat.id,
         text = '📝 Enter task description:'
     )
+    message_ids = us.getMessagesToDelete(call.message.chat.id)
+    message_ids.append(msg.message_id)
+    us.updateMessagesToDelete(call.message.chat.id, message_ids)
     us.updateUserState(call.message.chat.id, f'create_task_2:{work_space_id}')
 
 async def createTaskStep3(message: types.Message):
-    # await try_del_message(message, bot)
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    await try_del_message_from_ids(message, bot, message_ids)
+    await try_del_message(message, bot)
+
     work_space_id = us.getUserState(message.chat.id).split(':')[1] 
     us.updateUserState(message.chat.id, f'create_task_3:{work_space_id}')
     us.updateTaskData(message.chat.id, message.text)
     
-    await bot.send_message(
+    msg = await bot.send_message(
         chat_id = message.chat.id,
         text = """📝 Enter task end date time in format "01.01.2024 12:00"."""
     )
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    message_ids.append(msg.message_id)
+    us.updateMessagesToDelete(message.chat.id, message_ids)
     
-async def createTaskStep4(message: types.Message):
-    # await try_del_message(message, bot)
+async def createTaskStep4(message: types.Message) -> None:
+    message_ids = us.getMessagesToDelete(message.chat.id)
+    await try_del_message_from_ids(message, bot, message_ids)
+    await try_del_message(message, bot)
+
     pattern = r'\b\d{2}.\d{2}.\d{4} \d{2}:\d{2}'
     print(re.match(pattern, message.text))
     if re.match(pattern, message.text) == None:
@@ -250,10 +352,6 @@ async def createTaskStep4(message: types.Message):
 
     db.addTask(description, responsible_users, time_create, time_end, work_space_id)
     task_id = db.getLastTaskFromWorkSpaceId(work_space_id = work_space_id)[-1]
-    await bot.send_message(
-        chat_id = message.chat.id,
-        text = '''💠 Task has been created.''',
-    )
 
     for _id in responsible_users_list:
         if message.chat.id == int(_id):
@@ -261,17 +359,64 @@ async def createTaskStep4(message: types.Message):
         await bot.send_message(
             chat_id = int(_id),
             text = f"""💠 <b>Task id:</b> <em>{task_id}.</em>
+├  <b>Responsible users:</b> {responsible_users}
 
-├  <b>Describe:</b> <em>{description}.</em>
+├  <b>Description:</b> {description}.
 
-├  <b>The time of ending:</b> <em>{time_end}.</em>
-└  <b>The time of creating:</b> <em>{time_create}.</em>
+└  <b>Deadline:</b> <em>{time_end}.</em>
 """ 
         )
+
+    # =====================================================================================================
+
+    tasks = db.getAllTaskFromWorkSpaceId(work_space_id)
+    print(tasks)
+
+    us.updateTaskContainer(message.chat.id, tasks)
+    is_admin = bool(db.getIsAdminWorkSpacePartisipant(message.chat.id, work_space_id)[0])
+    current_pos = 0
+    len_pos = len(tasks)
+
+    task_id = tasks[current_pos][0]
+    description = tasks[current_pos][1]
+    responsible_user_name_list = tasks[current_pos][2].split(':')
+    responsible_user_name_list = db.getUserInfoFromManyId(tuple(responsible_user_name_list))
+    responsible_users = ', '.join([i[1] for i in responsible_user_name_list])[0:]
+    time_create = tasks[current_pos][3]
+    time_end = tasks[current_pos][4]
+
+    markup = InlineKeyboardMarkup(row_width = 3)
+    if is_admin:
+        markup.add(
+            InlineKeyboardButton(text = 'Delete', callback_data = f'delete_t:{work_space_id}:{task_id}'),
+            # InlineKeyboardButton(text = 'Update', callback_data = f'update_t:{work_space_id}:{task_id}'),
+        )
+    markup.add(
+        InlineKeyboardButton(text = '<', callback_data = f'<:{work_space_id}'),     
+        InlineKeyboardButton(text = f'{current_pos+1}/{len_pos}', callback_data = '...'),        
+        InlineKeyboardButton(text = '>', callback_data = f'>:{work_space_id}'),      
+    )
+    markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_manu:{work_space_id}'))
+
+    text = f'''💠 <b>Task id:</b> <em>{task_id}</em>
+├  <b>Responsible users:</b> <em>{responsible_users}</em>
+
+├  <b>Description:</b> {description}
+
+└  <b>Deadline:</b> <em>{time_end}</em>'''
+
+    await try_del_message(message, bot)
+    await bot.send_message(
+        chat_id = message.chat.id,
+            text = text,
+            reply_markup = markup,
+        ) 
 
     us.dropUserState(message.chat.id)
     us.dropTaskData(message.chat.id)
     us.dropRespUser(message.chat.id)
+
+    us.updateUserState(message.chat.id, f'{current_pos}:{work_space_id}')
 
     date_time: datetime = datetime.strptime(time_end, "%d.%m.%Y %H:%M")
     # first_date = date_time - timedelta(hours=3)
@@ -282,6 +427,7 @@ async def createTaskStep4(message: types.Message):
     await sendReminderTask(message, responsible_users_list, task_id, description, time_create, second_date)
     await sendReminderTask(message, responsible_users_list, task_id, description, time_create, third_date)
 
+    
 
 async def cencelResp(call: types.CallbackQuery):
     await try_del_message(call.message, bot)
@@ -337,7 +483,7 @@ async def getTask(call: types.CallbackQuery, update = False, diraction = None, b
     if is_admin:
         markup.add(
             InlineKeyboardButton(text = 'Delete', callback_data = f'delete_t:{work_space_id}:{task_id}'),
-            InlineKeyboardButton(text = 'Update', callback_data = f'update_t:{work_space_id}:{task_id}'),
+            # InlineKeyboardButton(text = 'Update', callback_data = f'update_t:{work_space_id}:{task_id}'),
         )
     markup.add(
         InlineKeyboardButton(text = '<', callback_data = f'<:{work_space_id}'),     
@@ -346,11 +492,12 @@ async def getTask(call: types.CallbackQuery, update = False, diraction = None, b
     )
     markup.add(InlineKeyboardButton(text = 'Back', callback_data = f'back_ws_manu:{work_space_id}'))
 
-    text = f'''💠 <b>Task id:</b> {task_id}
+    text = f'''💠 <b>Task id:</b> <em>{task_id}</em>
+├  <b>Responsible users:</b> <em>{responsible_users}</em>
+
 ├  <b>Description:</b> {description}
-├  <b>Responsible users:</b> {responsible_users}
-├  <b>Time create:</b> {time_create}
-└  <b>Time end:</b> {time_end}'''
+
+└  <b>Deadline:</b> <em>{time_end}</em>'''
 
     if update:
         await call.message.edit_text(
@@ -426,8 +573,10 @@ async def joinMeeting(call: types.CallbackQuery):
 
     await bot.send_message(
         chat_id = call.message.chat.id,
-        text = f'''💠 Name: "{workSpaceName}"
+        text = f'''💠 Space Name: "{workSpaceName}"
+
 ├ Leader: "{leaderName}"
+
 {meeting}''', # └ Google meet link:
         reply_markup = markup,
     )

@@ -11,7 +11,7 @@ import pytz
 bot = Bot(config.BOT_TOKEN, parse_mode="HTML", disable_web_page_preview = config.DISABLE_WEB_PAGE_PREVIWE)
 
 
-async def sendReminder(message: types.Message, responsible_users_list, task_id, description, time_create, time_end):
+async def sendReminder(message: types.Message, responsible_users_list, task_id, description, time_create, time_end, deadline):
     print('\nFunc <sendReminder> work\n')
 
     for _id in responsible_users_list:
@@ -22,11 +22,11 @@ async def sendReminder(message: types.Message, responsible_users_list, task_id, 
 
 ├  <b>Description:</b> {description}.
 
-└  <b>Deadline:</b> <em>{time_end.strftime("%d.%m.%Y %H:%M")}.</em>
+└  <b>Deadline:</b> <em>{deadline.strftime("%d.%m.%Y %H:%M")}.</em>
 """,
         )
 
-async def sendReminderTask(message: types.Message, responsible_users_list, task_id, description, time_create, time_end): 
+async def sendReminderTask(message: types.Message, responsible_users_list, task_id, description, time_create, time_end, deadline): 
     date_time: datetime = time_end # "01.01.2024 12:00"
     
     # Вычислить время ожидания до наступления назначенного времени
@@ -40,7 +40,7 @@ async def sendReminderTask(message: types.Message, responsible_users_list, task_
     if time_to_wait > 0:
         print(f'\nTask has been created\n')
         await asyncio.sleep(time_to_wait)
-        await sendReminder(message, responsible_users_list, task_id, description, time_create, time_end)
+        await sendReminder(message, responsible_users_list, task_id, description, time_create, time_end, deadline)
 
 
 

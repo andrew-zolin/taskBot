@@ -245,7 +245,7 @@ async def workSpaceMenu(call: types.CallbackQuery, back = False):
 
     message_ids = us.getMessagesToDelete(call.message.chat.id)
     message_ids.append(msg.message_id)
-    us.updateMessagesToDelete(message_ids)
+    us.updateMessagesToDelete(call.message.chat.id, message_ids)
 
 async def exitWorkSpaceMenu(call: types.CallbackQuery): 
     await try_del_message(call.message, bot)
@@ -375,8 +375,22 @@ async def createTaskStep4(message: types.Message) -> None:
 """ 
         )
 
-    # =====================================================================================================
+    await getTaskMessage(message)
 
+    date_time: datetime = datetime.strptime(time_end, "%d.%m.%Y %H:%M")
+    # first_date = date_time - timedelta(hours=3)
+    first_date: datetime = date_time - timedelta(seconds = config.SCHEDULE_TASK_1)
+    second_date: datetime = date_time - timedelta(seconds = config.SCHEDULE_TASK_2)
+    third_date: datetime = date_time
+
+    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, first_date, date_time)
+    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, second_date, date_time)
+    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, third_date, date_time)
+
+
+async def getTaskMessage(message: types.Message):
+    
+    work_space_id = us.getUserState(message.chat.id).split(':')[1]
     tasks = db.getAllTaskFromWorkSpaceId(work_space_id)
     print(tasks)
 
@@ -425,17 +439,8 @@ async def createTaskStep4(message: types.Message) -> None:
     us.dropRespUser(message.chat.id)
 
     us.updateUserState(message.chat.id, f'{current_pos}:{work_space_id}')
-
-    date_time: datetime = datetime.strptime(time_end, "%d.%m.%Y %H:%M")
-    # first_date = date_time - timedelta(hours=3)
-    first_date: datetime = date_time - timedelta(seconds = config.SCHEDULE_TASK_1)
-    second_date: datetime = date_time - timedelta(seconds = config.SCHEDULE_TASK_2)
-    third_date: datetime = date_time
-    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, first_date)
-    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, second_date)
-    await sendReminderTask(message, responsible_users_list, task_id, description, time_create, third_date)
-
     
+
 
 async def cencelResp(call: types.CallbackQuery):
     await try_del_message(call.message, bot)
